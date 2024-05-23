@@ -30,26 +30,40 @@
                 <li><strong>Analysis:</strong> Ongoing</li>
                 <li><strong>Researcher:</strong> Jason "BarrySploit" Barry</li>
             </ul>
-            <p>A good buddy of mine had ordered a USB docking station off of Amazon from a seemingly reputable distributor. The docking station came with a small USB that was immediately flagged by Windows Defender.
-                Once opened, the USB contained the following at the root of the drive:
-                2 shortcuts (lnk files)
-                2 hidden folders
-                1 hidden vbe script
-            </p>
-            <img src="usb_root.png" alt="Files in Root of USB Drive">
             <p>
-                The folders and the vbe script were not only marked as hidden, but also marked as system files.
-                This meant that even with "Show hidden files" enabled, you still can't see the files.
-                There is a specific setting in file explorer to allow you to see system files. (See below). Go to File Explorer, View, Options, advanced and unselect this box.
+                This malware was found to have Remote Access capabilities, allowing the attackers to run arbitrary commands via an HTTP channel. The malware also creates multiple forms of persistence and infects all other drives when ran. All your USBs will be infected when plugged in. This self-replicating nature classifies this malware as a worm.
             </p>
-            <img src="Hidden System Files.png" alt="Option to allow viewing of system files.">
         </div>
     </section>
 
     <section class="findings">
         <div class="container">
             <h2>Research Findings</h2>
-            <p></p>
+            <p>A good buddy of mine had ordered a USB docking station off of Amazon from a seemingly reputable distributor. The docking station came with a small USB that was immediately flagged by Windows Defender.
+            </p>
+            <p>
+                Once opened, the USB contained the following at the root of the drive:
+            </p>
+            <p>
+                2 shortcuts (lnk files)
+            </p>
+            <p>
+                2 hidden folders
+            </p>
+            <p>
+                1 hidden vbe script
+            </p>
+            <img src="usb_root.png" alt="Files in Root of USB Drive">
+            <p>
+                The folders and the vbe script were not only marked as hidden, but also marked as system files.
+            </p>    
+            <p>
+                This meant that even with "Show hidden files" enabled, you still can't see the files.
+            </p>
+            <p>    
+                There is a specific setting in file explorer to allow you to see system files. (See below). Go to File Explorer, View, Options, advanced and unselect this box.
+            </p>
+            <img src="Hidden System Files.png" alt="Option to allow viewing of system files.">
         </div>
     </section>
 
