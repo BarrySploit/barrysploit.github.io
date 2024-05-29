@@ -26,19 +26,22 @@
             <h2>Key Details</h2>
             <ul>
                 <li><strong>Worm Name:</strong> Houdini Worm</li>
-                <li><strong>Type:</strong> Malware</li>
+                <li><strong>Type:</strong> USB Infecting Worm</li>
                 <li><strong>Analysis:</strong> Ongoing</li>
                 <li><strong>Researcher:</strong> Jason "BarrySploit" Barry</li>
             </ul>
             <p>
                 This malware was found to have Remote Access capabilities, allowing the attackers to run arbitrary commands via an HTTP channel. The malware also creates multiple forms of persistence and infects all other drives when ran. All your USBs will be infected when plugged in. This self-replicating nature classifies this malware as a worm.
             </p>
+            <p>
+                Hash: <a href="https://www.virustotal.com/gui/file/e66a0f9d69f455d41212d2cd9b9158b55fd5f1da4ae8fbf76492c2d19ff05895">e66a0f9d69f455d41212d2cd9b9158b55fd5f1da4ae8fbf76492c2d19ff05895</a>
+            </p>
         </div>
     </section>
 
     <section class="findings">
         <div class="container">
-            <h2>Research Findings</h2>
+            <h2>What is on the USB?</h2>
             <p>A good buddy of mine had ordered a USB docking station off of Amazon from a seemingly reputable distributor. The docking station came with a small USB that was immediately flagged by Windows Defender.
             </p>
             <p>
@@ -64,9 +67,55 @@
                 There is a specific setting in file explorer to allow you to see system files. (See below). Go to File Explorer, View, Options, advanced and unselect this box.
             </p>
             <img src="Hidden System Files.png" alt="Option to allow viewing of system files.">
+            <p>
+                To a normal user, the only files they would see are the 2 shortcut/LNK files. Where do the shortcuts go?
+            </p>
         </div>
     </section>
-
+    <section class="LNK Analysis">
+        <div class="container">
+            <h2>LNK Analysis</h2>
+            <p>
+                Shortcut destination + Arguments:
+            </p>
+            <pre>
+                <code>
+                C:\Windows\system32\cmd.exe /c start angry" "birds.vbe&start explorer System" "Volume" "Information&exit
+                </code>
+                <code>
+                C:\Windows\system32\cmd.exe /c start angry" "birds.vbe&start explorer Displaylink" "dock" "user" "guide-2.21&exit
+                </code>
+            </pre>
+            <p>
+                So the shortcut calls cmd.exe (Command Prompt) using double quotations to escape all the spaces.
+            </p>
+            <p>
+                Command prompt runs the Angry Birds.vbe file, which is an encoded Visual Basic Script.
+            </p>
+            <p>
+                Then the file explorer (explorer.exe) opens the appropriate folder, that was originally hidden.
+            </p>
+            <p>
+                So the malware expects the user to click the LNK and continue to the rest of the USB, which does not contain any malicious content. 
+                Just genuine drivers for the USB Docking Station.
+            </p>
+            <p>
+                <a href="https://www.virustotal.com/gui/file/575eda32c6706129575cf6fcd9921027064767b591a7419dbcd3f4d9518ca36a"><sub>https://www.virustotal.com/gui/file/575eda32c6706129575cf6fcd9921027064767b591a7419dbcd3f4d9518ca36a</sub></a>
+            </p>
+            <img src="legitimate_files.png">
+        </div>
+    </section>
+    <section class="findings">
+        <div class="container">
+            <h2>Payload (Visual Basic) Analysis</h2>
+            <p>
+                We know the malicious payload is inside of the Angry Birds.vbe script. However, it is encoded so we need to find a way to decode it first.
+            </p>
+            <p>
+                A quick google search leads us to a <a href="https://github.com/JohnHammond/vbe-decoder">John Hammond tool</a> that we can use to decode the script.
+            </p>
+        </div>
+    </section>
     <footer>
         <div class="container">
             <p>&copy; BarrySploit Github Pages</p>
